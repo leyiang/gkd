@@ -45,10 +45,9 @@ fun HomePage() {
 
     val controlPage = useControlPage()
     val subsPage = useSubsManagePage()
-    val appListPage = useAppListPage()
     val settingsPage = useSettingsPage()
 
-    val pages = arrayOf(controlPage, subsPage, appListPage, settingsPage)
+    val pages = arrayOf(controlPage, subsPage, settingsPage)
 
     val currentPage = pages.find { p -> p.navItem.label == tab.label } ?: controlPage
 

@@ -18,7 +18,6 @@ import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -35,34 +34,24 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
-import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ramcosta.composedestinations.generated.destinations.AboutPageDestination
 import com.ramcosta.composedestinations.generated.destinations.AdvancedPageDestination
+import com.ramcosta.composedestinations.generated.destinations.UseAppListPageDestination
 import com.ramcosta.composedestinations.utils.toDestinationsNavigator
 import kotlinx.coroutines.flow.update
-import li.songe.gkd.META
 import li.songe.gkd.MainActivity
-import li.songe.gkd.ui.component.RotatingLoadingIcon
 import li.songe.gkd.ui.component.SettingItem
 import li.songe.gkd.ui.component.TextMenu
 import li.songe.gkd.ui.component.TextSwitch
 import li.songe.gkd.ui.component.updateDialogOptions
-import li.songe.gkd.ui.component.waitResult
 import li.songe.gkd.ui.style.EmptyHeight
-import li.songe.gkd.ui.style.itemPadding
-import li.songe.gkd.ui.style.titleItemPadding
 import li.songe.gkd.ui.theme.supportDynamicColor
 import li.songe.gkd.util.DarkThemeOption
 import li.songe.gkd.util.LocalNavController
-import li.songe.gkd.util.UpdateChannelOption
-import li.songe.gkd.util.checkUpdate
 import li.songe.gkd.util.findOption
-import li.songe.gkd.util.launchAsFn
-import li.songe.gkd.util.launchTry
 import li.songe.gkd.util.storeFlow
 import li.songe.gkd.util.throttle
-import li.songe.gkd.util.toast
 
 val settingsNav = BottomNavItem(
     label = "设置", icon = Icons.Outlined.Settings
@@ -301,6 +290,10 @@ fun useSettingsPage(): ScaffoldExt {
                 SettingItem(title = "其它设置", onClick = {
                     navController.toDestinationsNavigator().navigate(AdvancedPageDestination)
                 })
+
+//                SettingItem(title = "应用列表", onClick = {
+//                    navController.toDestinationsNavigator().navigate(UseAppListPageDestination)
+//                })
 
                 SettingItem(title = "关于", onClick = {
                     navController.toDestinationsNavigator().navigate(AboutPageDestination)

@@ -57,6 +57,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.blankj.utilcode.util.KeyboardUtils
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
+import com.ramcosta.composedestinations.annotation.Destination
+import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.generated.destinations.AppConfigPageDestination
 import com.ramcosta.composedestinations.utils.toDestinationsNavigator
 import kotlinx.coroutines.flow.update
@@ -68,6 +70,7 @@ import li.songe.gkd.ui.style.EmptyHeight
 import li.songe.gkd.ui.style.appItemPadding
 import li.songe.gkd.ui.style.menuPadding
 import li.songe.gkd.util.LocalNavController
+import li.songe.gkd.util.ProfileTransitions
 import li.songe.gkd.util.SortTypeOption
 import li.songe.gkd.util.mapHashCode
 import li.songe.gkd.util.ruleSummaryFlow
@@ -78,6 +81,7 @@ val appListNav = BottomNavItem(
     label = "应用", icon = Icons.Default.Apps
 )
 
+@Destination<RootGraph>(style = ProfileTransitions::class)
 @Composable
 fun useAppListPage(): ScaffoldExt {
     val navController = LocalNavController.current
