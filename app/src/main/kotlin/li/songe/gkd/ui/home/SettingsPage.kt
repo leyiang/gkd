@@ -1,5 +1,6 @@
 package li.songe.gkd.ui.home
 
+import SectionWrap
 import SettingHTTPServerSection
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -212,168 +213,99 @@ fun useSettingsPage(): ScaffoldExt {
 
             SettingHTTPServerSection()
 
-            Text(
-                text = "常规",
-                modifier = Modifier.titleItemPadding(),
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.primary,
-            )
-
-            TextSwitch(
-                title = "触发提示",
-                subtitle = store.clickToast,
-                checked = store.toastWhenClick,
-                modifier = Modifier.clickable {
-                    showToastInputDlg = true
-                },
-                onCheckedChange = {
-                    storeFlow.value = store.copy(
-                        toastWhenClick = it
-                    )
-                })
-
-            if (store.toastWhenClick) {
-                TextSwitch(
-                    title = "系统提示",
-                    subtitle = "系统样式触发提示",
-                    suffix = "查看限制",
-                    onSuffixClick = {
-                        context.mainVm.dialogFlow.updateDialogOptions(
-                            title = "限制说明",
-                            text = "系统 Toast 存在频率限制, 触发过于频繁会被系统强制不显示\n\n如果只使用开屏一类低频率规则可使用系统提示, 否则建议关闭此项使用自定义样式提示",
-                        )
-                    },
-                    checked = store.useSystemToast,
-                    onCheckedChange = {
-                        storeFlow.value = store.copy(
-                            useSystemToast = it
-                        )
-                    })
-            }
-
-            val subsStatus by vm.subsStatusFlow.collectAsState()
-            TextSwitch(
-                title = "通知文案",
-                subtitle = if (store.useCustomNotifText) store.customNotifText else subsStatus,
-                checked = store.useCustomNotifText,
-                modifier = Modifier.clickable {
-                    showNotifTextInputDlg = true
-                },
-                onCheckedChange = {
-                    storeFlow.value = store.copy(
-                        useCustomNotifText = it
-                    )
-                })
-
-            TextSwitch(
-                title = "后台隐藏",
-                subtitle = "在[最近任务]中隐藏本应用",
-                checked = store.excludeFromRecents,
-                onCheckedChange = {
-                    storeFlow.value = store.copy(
-                        excludeFromRecents = it
-                    )
-                })
-
-            Text(
-                text = "主题",
-                modifier = Modifier.titleItemPadding(),
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.primary,
-            )
-
-            TextMenu(
-                title = "深色模式",
-                option = DarkThemeOption.allSubObject.findOption(store.enableDarkTheme)
+            SectionWrap(
+                title = "常规",
             ) {
-                storeFlow.update { s -> s.copy(enableDarkTheme = it.value) }
-            }
-
-            if (supportDynamicColor) {
-                TextSwitch(title = "动态配色",
-                    subtitle = "配色跟随系统主题",
-                    checked = store.enableDynamicColor,
+                TextSwitch(
+                    title = "触发提示",
+                    subtitle = store.clickToast,
+                    checked = store.toastWhenClick,
+                    modifier = Modifier.clickable {
+                        showToastInputDlg = true
+                    },
                     onCheckedChange = {
                         storeFlow.value = store.copy(
-                            enableDynamicColor = it
+                            toastWhenClick = it
+                        )
+                    })
+
+                if (store.toastWhenClick) {
+                    TextSwitch(
+                        title = "系统提示",
+                        subtitle = "系统样式触发提示",
+                        suffix = "查看限制",
+                        onSuffixClick = {
+                            context.mainVm.dialogFlow.updateDialogOptions(
+                                title = "限制说明",
+                                text = "系统 Toast 存在频率限制, 触发过于频繁会被系统强制不显示\n\n如果只使用开屏一类低频率规则可使用系统提示, 否则建议关闭此项使用自定义样式提示",
+                            )
+                        },
+                        checked = store.useSystemToast,
+                        onCheckedChange = {
+                            storeFlow.value = store.copy(
+                                useSystemToast = it
+                            )
+                        })
+                }
+
+                val subsStatus by vm.subsStatusFlow.collectAsState()
+                TextSwitch(
+                    title = "通知文案",
+                    subtitle = if (store.useCustomNotifText) store.customNotifText else subsStatus,
+                    checked = store.useCustomNotifText,
+                    modifier = Modifier.clickable {
+                        showNotifTextInputDlg = true
+                    },
+                    onCheckedChange = {
+                        storeFlow.value = store.copy(
+                            useCustomNotifText = it
+                        )
+                    })
+
+                TextSwitch(
+                    title = "后台隐藏",
+                    subtitle = "在[最近任务]中隐藏本应用",
+                    checked = store.excludeFromRecents,
+                    onCheckedChange = {
+                        storeFlow.value = store.copy(
+                            excludeFromRecents = it
                         )
                     })
             }
 
-            if (META.updateEnabled) {
-                Text(
-                    text = "更新",
-                    modifier = Modifier.titleItemPadding(),
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-
-                TextSwitch(
-                    title = "自动更新",
-                    subtitle = "打开应用时检测新版本",
-                    checked = store.autoCheckAppUpdate,
-                    onCheckedChange = {
-                        storeFlow.value = store.copy(
-                            autoCheckAppUpdate = it
-                        )
-                    }
-                )
-
+            SectionWrap(
+                title = "主题"
+            ) {
                 TextMenu(
-                    title = "更新渠道",
-                    option = UpdateChannelOption.allSubObject.findOption(store.updateChannel)
+                    title = "深色模式",
+                    option = DarkThemeOption.allSubObject.findOption(store.enableDarkTheme)
                 ) {
-                    if (it.value == UpdateChannelOption.Beta.value) {
-                        vm.viewModelScope.launchTry {
-                            context.mainVm.dialogFlow.waitResult(
-                                title = "版本渠道",
-                                text = "测试版本渠道更新快\n但不稳定可能存在较多BUG\n请谨慎使用",
-                            )
-                            storeFlow.update { s -> s.copy(updateChannel = it.value) }
-                        }
-                    } else {
-                        storeFlow.update { s -> s.copy(updateChannel = it.value) }
-                    }
+                    storeFlow.update { s -> s.copy(enableDarkTheme = it.value) }
                 }
 
-                Row(
-                    modifier = Modifier
-                        .clickable(
-                            onClick = throttle(fn = context.mainVm.viewModelScope.launchAsFn {
-                                if (context.mainVm.updateStatus.checkUpdatingFlow.value) return@launchAsFn
-                                val newVersion = context.mainVm.updateStatus.checkUpdate()
-                                if (newVersion == null) {
-                                    toast("暂无更新")
-                                }
-                            })
-                        )
-                        .fillMaxWidth()
-                        .itemPadding(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        text = "检查更新",
-                        style = MaterialTheme.typography.bodyLarge,
-                    )
-                    RotatingLoadingIcon(loading = checkUpdating)
+                if (supportDynamicColor) {
+                    TextSwitch(title = "动态配色",
+                        subtitle = "配色跟随系统主题",
+                        checked = store.enableDynamicColor,
+                        onCheckedChange = {
+                            storeFlow.value = store.copy(
+                                enableDynamicColor = it
+                            )
+                        })
                 }
             }
 
-            Text(
-                text = "其它",
-                modifier = Modifier.titleItemPadding(),
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.primary,
-            )
+            SectionWrap(
+                title = "其它"
+            ) {
+                SettingItem(title = "其它设置", onClick = {
+                    navController.toDestinationsNavigator().navigate(AdvancedPageDestination)
+                })
 
-            SettingItem(title = "高级设置", onClick = {
-                navController.toDestinationsNavigator().navigate(AdvancedPageDestination)
-            })
-
-            SettingItem(title = "关于", onClick = {
-                navController.toDestinationsNavigator().navigate(AboutPageDestination)
-            })
+                SettingItem(title = "关于", onClick = {
+                    navController.toDestinationsNavigator().navigate(AboutPageDestination)
+                })
+            }
 
             Spacer(modifier = Modifier.height(EmptyHeight))
         }

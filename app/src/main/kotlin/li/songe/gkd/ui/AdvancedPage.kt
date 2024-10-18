@@ -1,5 +1,6 @@
 package li.songe.gkd.ui
 
+import SectionWrap
 import android.app.Activity
 import android.content.Context
 import android.media.projection.MediaProjectionManager
@@ -215,7 +216,7 @@ fun AdvancedPage() {
                         contentDescription = null,
                     )
                 }
-            }, title = { Text(text = "高级设置") }, actions = {})
+            }, title = { Text(text = "其它设置") }, actions = {})
         }
     ) { contentPadding ->
         Column(
@@ -224,219 +225,205 @@ fun AdvancedPage() {
                 .verticalScroll(rememberScrollState())
                 .padding(contentPadding),
         ) {
-            Text(
-                text = "Shizuku",
-                modifier = Modifier.titleItemPadding(),
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.primary,
-            )
-            val shizukuOk by shizukuOkState.stateFlow.collectAsState()
-            if (!shizukuOk) {
-                AuthCard(title = "Shizuku授权",
-                    desc = "高级模式:准确区别界面ID,强制模拟点击",
-                    onAuthClick = {
-                        try {
-                            Shizuku.requestPermission(Activity.RESULT_OK)
-                        } catch (e: Exception) {
-                            LogUtils.d("Shizuku授权错误", e.message)
-                            context.mainVm.shizukuErrorFlow.value = true
-                        }
-                    })
-                ShizukuFragment(false)
-            } else {
-                ShizukuFragment()
+            SectionWrap(
+                title = "Shizuku"
+            ) {
+                val shizukuOk by shizukuOkState.stateFlow.collectAsState()
+                if (!shizukuOk) {
+                    AuthCard(title = "Shizuku授权",
+                        desc = "高级模式:准确区别界面ID,强制模拟点击",
+                        onAuthClick = {
+                            try {
+                                Shizuku.requestPermission(Activity.RESULT_OK)
+                            } catch (e: Exception) {
+                                LogUtils.d("Shizuku授权错误", e.message)
+                                context.mainVm.shizukuErrorFlow.value = true
+                            }
+                        })
+                    ShizukuFragment(false)
+                } else {
+                    ShizukuFragment()
+                }
             }
 
+            SectionWrap(
+                title = "快照"
+            ) {
 
-            Text(
-                text = "快照",
-                modifier = Modifier.titleItemPadding(),
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.primary,
-            )
+                SettingItem(
+                    title = "快照记录" + (if (snapshotCount > 0) "-$snapshotCount" else ""),
+                    onClick = {
+                        navController.toDestinationsNavigator().navigate(SnapshotPageDestination)
+                    }
+                )
 
-            SettingItem(
-                title = "快照记录" + (if (snapshotCount > 0) "-$snapshotCount" else ""),
-                onClick = {
-                    navController.toDestinationsNavigator().navigate(SnapshotPageDestination)
+                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+                    val screenshotRunning by ScreenshotService.isRunning.collectAsState()
+                    TextSwitch(
+                        title = "截屏服务",
+                        subtitle = "生成快照需要获取屏幕截图",
+                        checked = screenshotRunning,
+                        onCheckedChange = vm.viewModelScope.launchAsFn<Boolean> {
+                            if (it) {
+                                requiredPermission(context, notificationState)
+                                val mediaProjectionManager =
+                                    context.getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
+                                val activityResult =
+                                    context.launcher.launchForResult(mediaProjectionManager.createScreenCaptureIntent())
+                                if (activityResult.resultCode == Activity.RESULT_OK && activityResult.data != null) {
+                                    ScreenshotService.start(intent = activityResult.data!!)
+                                }
+                            } else {
+                                ScreenshotService.stop()
+                            }
+                        }
+                    )
                 }
-            )
 
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
-                val screenshotRunning by ScreenshotService.isRunning.collectAsState()
+                val floatingRunning by FloatingService.isRunning.collectAsState()
                 TextSwitch(
-                    title = "截屏服务",
-                    subtitle = "生成快照需要获取屏幕截图",
-                    checked = screenshotRunning,
+                    title = "悬浮窗服务",
+                    subtitle = "显示悬浮按钮点击保存快照",
+                    checked = floatingRunning,
                     onCheckedChange = vm.viewModelScope.launchAsFn<Boolean> {
                         if (it) {
                             requiredPermission(context, notificationState)
-                            val mediaProjectionManager =
-                                context.getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
-                            val activityResult =
-                                context.launcher.launchForResult(mediaProjectionManager.createScreenCaptureIntent())
-                            if (activityResult.resultCode == Activity.RESULT_OK && activityResult.data != null) {
-                                ScreenshotService.start(intent = activityResult.data!!)
-                            }
+                            requiredPermission(context, canDrawOverlaysState)
+                            FloatingService.start()
                         } else {
-                            ScreenshotService.stop()
+                            FloatingService.stop()
                         }
                     }
                 )
-            }
 
-            val floatingRunning by FloatingService.isRunning.collectAsState()
-            TextSwitch(
-                title = "悬浮窗服务",
-                subtitle = "显示悬浮按钮点击保存快照",
-                checked = floatingRunning,
-                onCheckedChange = vm.viewModelScope.launchAsFn<Boolean> {
-                    if (it) {
-                        requiredPermission(context, notificationState)
-                        requiredPermission(context, canDrawOverlaysState)
-                        FloatingService.start()
-                    } else {
-                        FloatingService.stop()
-                    }
-                }
-            )
-
-            TextSwitch(
-                title = "音量快照",
-                subtitle = "音量变化时保存快照",
-                checked = store.captureVolumeChange
-            ) {
-                storeFlow.value = store.copy(
-                    captureVolumeChange = it
-                )
-            }
-
-            TextSwitch(
-                title = "截屏快照",
-                subtitle = "触发截屏时保存快照",
-                suffix = "查看限制",
-                onSuffixClick = {
-                    context.mainVm.dialogFlow.updateDialogOptions(
-                        title = "限制说明",
-                        text = "仅支持部分小米设备截屏触发\n\n只保存节点信息不保存图片, 用户需要在快照记录里替换截图",
-                    )
-                },
-                checked = store.captureScreenshot
-            ) {
-                storeFlow.value = store.copy(
-                    captureScreenshot = it
-                )
-            }
-
-            TextSwitch(
-                title = "隐藏状态栏",
-                subtitle = "隐藏截图顶部状态栏",
-                checked = store.hideSnapshotStatusBar
-            ) {
-                storeFlow.value = store.copy(
-                    hideSnapshotStatusBar = it
-                )
-            }
-
-            TextSwitch(
-                title = "保存提示",
-                subtitle = "保存时提示\"正在保存快照\"",
-                checked = store.showSaveSnapshotToast
-            ) {
-                storeFlow.value = store.copy(
-                    showSaveSnapshotToast = it
-                )
-            }
-
-            SettingItem(
-                title = "Github Cookie",
-                subtitle = "生成快照/日志链接",
-                suffix = "获取教程",
-                onSuffixClick = {
-                    context.openUri("https://gkd.li/?r=1")
-                },
-                imageVector = Icons.Default.Edit,
-                onClick = {
-                    showEditCookieDlg = true
-                }
-            )
-
-            Text(
-                text = "界面记录",
-                modifier = Modifier.titleItemPadding(),
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.primary,
-            )
-
-            TextSwitch(
-                title = "记录界面",
-                subtitle = "记录打开的应用及界面",
-                checked = store.enableActivityLog
-            ) {
-                storeFlow.value = store.copy(
-                    enableActivityLog = it
-                )
-            }
-            SettingItem(
-                title = "界面记录",
-                onClick = {
-                    navController.toDestinationsNavigator().navigate(ActivityLogPageDestination)
-                }
-            )
-
-            Text(
-                text = "日志",
-                modifier = Modifier.titleItemPadding(),
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.primary,
-            )
-
-            TextSwitch(
-                title = "保存日志",
-                subtitle = "保存7天日志,帮助定位BUG",
-                checked = store.log2FileSwitch,
-                onCheckedChange = {
+                TextSwitch(
+                    title = "音量快照",
+                    subtitle = "音量变化时保存快照",
+                    checked = store.captureVolumeChange
+                ) {
                     storeFlow.value = store.copy(
-                        log2FileSwitch = it
+                        captureVolumeChange = it
                     )
-                    if (!it) {
-                        context.mainVm.viewModelScope.launchTry(Dispatchers.IO) {
-                            val logFiles = LogUtils.getLogFiles()
-                            if (logFiles.isNotEmpty()) {
-                                logFiles.forEach { f ->
-                                    f.delete()
+                }
+
+                TextSwitch(
+                    title = "截屏快照",
+                    subtitle = "触发截屏时保存快照",
+                    suffix = "查看限制",
+                    onSuffixClick = {
+                        context.mainVm.dialogFlow.updateDialogOptions(
+                            title = "限制说明",
+                            text = "仅支持部分小米设备截屏触发\n\n只保存节点信息不保存图片, 用户需要在快照记录里替换截图",
+                        )
+                    },
+                    checked = store.captureScreenshot
+                ) {
+                    storeFlow.value = store.copy(
+                        captureScreenshot = it
+                    )
+                }
+
+                TextSwitch(
+                    title = "隐藏状态栏",
+                    subtitle = "隐藏截图顶部状态栏",
+                    checked = store.hideSnapshotStatusBar
+                ) {
+                    storeFlow.value = store.copy(
+                        hideSnapshotStatusBar = it
+                    )
+                }
+
+                TextSwitch(
+                    title = "保存提示",
+                    subtitle = "保存时提示\"正在保存快照\"",
+                    checked = store.showSaveSnapshotToast
+                ) {
+                    storeFlow.value = store.copy(
+                        showSaveSnapshotToast = it
+                    )
+                }
+
+                SettingItem(
+                    title = "Github Cookie",
+                    subtitle = "生成快照/日志链接",
+                    suffix = "获取教程",
+                    onSuffixClick = {
+                        context.openUri("https://gkd.li/?r=1")
+                    },
+                    imageVector = Icons.Default.Edit,
+                    onClick = {
+                        showEditCookieDlg = true
+                    }
+                )
+            }
+
+            SectionWrap(
+                title = "界面记录"
+            ) {
+                TextSwitch(
+                    title = "记录界面",
+                    subtitle = "记录打开的应用及界面",
+                    checked = store.enableActivityLog
+                ) {
+                    storeFlow.value = store.copy(
+                        enableActivityLog = it
+                    )
+                }
+                SettingItem(
+                    title = "界面记录",
+                    onClick = {
+                        navController.toDestinationsNavigator().navigate(ActivityLogPageDestination)
+                    }
+                )
+            }
+
+            SectionWrap(
+                title = "日志"
+            ) {
+                TextSwitch(
+                    title = "保存日志",
+                    subtitle = "保存7天日志,帮助定位BUG",
+                    checked = store.log2FileSwitch,
+                    onCheckedChange = {
+                        storeFlow.value = store.copy(
+                            log2FileSwitch = it
+                        )
+                        if (!it) {
+                            context.mainVm.viewModelScope.launchTry(Dispatchers.IO) {
+                                val logFiles = LogUtils.getLogFiles()
+                                if (logFiles.isNotEmpty()) {
+                                    logFiles.forEach { f ->
+                                        f.delete()
+                                    }
+                                    toast("已删除全部日志")
                                 }
-                                toast("已删除全部日志")
                             }
                         }
-                    }
-                })
+                    })
 
-            if (store.log2FileSwitch) {
-                SettingItem(
-                    title = "导出日志",
-                    imageVector = Icons.Default.Share,
-                    onClick = {
-                        showShareLogDlg = true
-                    }
-                )
+                if (store.log2FileSwitch) {
+                    SettingItem(
+                        title = "导出日志",
+                        imageVector = Icons.Default.Share,
+                        onClick = {
+                            showShareLogDlg = true
+                        }
+                    )
+                }
             }
 
-            Text(
-                text = "其它",
-                modifier = Modifier.titleItemPadding(),
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.primary,
-            )
-
-            TextSwitch(title = "前台悬浮窗",
-                subtitle = "添加透明悬浮窗,关闭可能导致不点击/点击缓慢",
-                checked = store.enableAbFloatWindow,
-                onCheckedChange = {
-                    storeFlow.value = store.copy(
-                        enableAbFloatWindow = it
-                    )
-                })
+            SectionWrap(
+                title = "其它",
+            ) {
+                TextSwitch(title = "前台悬浮窗",
+                    subtitle = "添加透明悬浮窗,关闭可能导致不点击/点击缓慢",
+                    checked = store.enableAbFloatWindow,
+                    onCheckedChange = {
+                        storeFlow.value = store.copy(
+                            enableAbFloatWindow = it
+                        )
+                    })
+            }
 
             Spacer(modifier = Modifier.height(EmptyHeight))
         }

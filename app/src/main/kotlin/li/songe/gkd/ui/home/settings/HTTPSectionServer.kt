@@ -112,86 +112,84 @@ fun SettingHTTPServerSection() {
     val httpServerRunning by HttpService.isRunning.collectAsState()
     val localNetworkIps by HttpService.localNetworkIpsFlow.collectAsState()
 
-    Text(
-        text = "HTTP服务",
-        modifier = Modifier.titleItemPadding(),
-        style = MaterialTheme.typography.titleSmall,
-        color = MaterialTheme.colorScheme.primary,
-    )
-    Row(
-        modifier = Modifier.itemPadding(),
-        verticalAlignment = Alignment.CenterVertically
+    SectionWrap(
+        title = "HTTP服务"
     ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = "HTTP服务",
-                style = MaterialTheme.typography.bodyLarge,
+        Row(
+            modifier = Modifier.itemPadding(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "HTTP服务",
+                    style = MaterialTheme.typography.bodyLarge,
+                )
+                CompositionLocalProvider(
+                    LocalTextStyle provides MaterialTheme.typography.bodyMedium
+                ) {
+                    if (!httpServerRunning) {
+                        Text(
+                            text = "在浏览器下连接调试工具",
+                        )
+                    } else {
+                        Text(
+                            text = "点击下面任意链接打开即可自动连接",
+                        )
+                        Row {
+                            Text(
+                                text = "http://127.0.0.1:${store.httpServerPort}",
+                                color = MaterialTheme.colorScheme.primary,
+                                style = LocalTextStyle.current.copy(textDecoration = TextDecoration.Underline),
+                                modifier = Modifier.clickable(onClick = throttle {
+                                    context.openUri("http://127.0.0.1:${store.httpServerPort}")
+                                }),
+                            )
+                            Spacer(modifier = Modifier.width(2.dp))
+                            Text(text = "仅本设备可访问")
+                        }
+                        localNetworkIps.forEach { host ->
+                            Text(
+                                text = "http://${host}:${store.httpServerPort}",
+                                color = MaterialTheme.colorScheme.primary,
+                                style = LocalTextStyle.current.copy(textDecoration = TextDecoration.Underline),
+                                modifier = Modifier.clickable(onClick = throttle {
+                                    context.openUri("http://${host}:${store.httpServerPort}")
+                                })
+                            )
+                        }
+                    }
+                }
+            }
+            Switch(
+                checked = httpServerRunning,
+                onCheckedChange = vm.viewModelScope.launchAsFn<Boolean> {
+                    if (it) {
+                        requiredPermission(context, notificationState)
+                        HttpService.start()
+                    } else {
+                        HttpService.stop()
+                    }
+                }
             )
-            CompositionLocalProvider(
-                LocalTextStyle provides MaterialTheme.typography.bodyMedium
-            ) {
-                if (!httpServerRunning) {
-                    Text(
-                        text = "在浏览器下连接调试工具",
-                    )
-                } else {
-                    Text(
-                        text = "点击下面任意链接打开即可自动连接",
-                    )
-                    Row {
-                        Text(
-                            text = "http://127.0.0.1:${store.httpServerPort}",
-                            color = MaterialTheme.colorScheme.primary,
-                            style = LocalTextStyle.current.copy(textDecoration = TextDecoration.Underline),
-                            modifier = Modifier.clickable(onClick = throttle {
-                                context.openUri("http://127.0.0.1:${store.httpServerPort}")
-                            }),
-                        )
-                        Spacer(modifier = Modifier.width(2.dp))
-                        Text(text = "仅本设备可访问")
-                    }
-                    localNetworkIps.forEach { host ->
-                        Text(
-                            text = "http://${host}:${store.httpServerPort}",
-                            color = MaterialTheme.colorScheme.primary,
-                            style = LocalTextStyle.current.copy(textDecoration = TextDecoration.Underline),
-                            modifier = Modifier.clickable(onClick = throttle {
-                                context.openUri("http://${host}:${store.httpServerPort}")
-                            })
-                        )
-                    }
-                }
-            }
         }
-        Switch(
-            checked = httpServerRunning,
-            onCheckedChange = vm.viewModelScope.launchAsFn<Boolean> {
-                if (it) {
-                    requiredPermission(context, notificationState)
-                    HttpService.start()
-                } else {
-                    HttpService.stop()
-                }
+
+        SettingItem(
+            title = "服务端口",
+            subtitle = store.httpServerPort.toString(),
+            imageVector = Icons.Default.Edit,
+            onClick = {
+                showEditPortDlg = true
             }
         )
-    }
 
-    SettingItem(
-        title = "服务端口",
-        subtitle = store.httpServerPort.toString(),
-        imageVector = Icons.Default.Edit,
-        onClick = {
-            showEditPortDlg = true
+        TextSwitch(
+            title = "清除订阅",
+            subtitle = "服务关闭时,删除内存订阅",
+            checked = store.autoClearMemorySubs
+        ) {
+            storeFlow.value = store.copy(
+                autoClearMemorySubs = it
+            )
         }
-    )
-
-    TextSwitch(
-        title = "清除订阅",
-        subtitle = "服务关闭时,删除内存订阅",
-        checked = store.autoClearMemorySubs
-    ) {
-        storeFlow.value = store.copy(
-            autoClearMemorySubs = it
-        )
     }
 }
