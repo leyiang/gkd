@@ -349,7 +349,7 @@ private suspend fun updateSubs(subsEntry: SubsEntry): RawSubscription? {
                 "快速检测更新:id=${subsRaw.id},version=${subsRaw.version}",
                 subsVersion
             )
-            if (subsVersion.id == subsRaw.id && subsVersion.version <= subsRaw.version) {
+            if (subsVersion.id == subsRaw.id && subsVersion.version < subsRaw.version) {
                 return null
             }
         } catch (e: Exception) {
@@ -370,7 +370,7 @@ private suspend fun updateSubs(subsEntry: SubsEntry): RawSubscription? {
     if (newSubsRaw.id != subsItem.id) {
         error("新id=${newSubsRaw.id}不匹配旧id=${subsItem.id}")
     }
-    if (subsRaw != null && newSubsRaw.version <= subsRaw.version) {
+    if (subsRaw != null && newSubsRaw.version < subsRaw.version) {
         LogUtils.d(
             "版本号不满足条件:id=${subsItem.id}",
             "${subsRaw.version} -> ${newSubsRaw.version}"
