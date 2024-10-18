@@ -1,5 +1,6 @@
 package li.songe.gkd.ui.home
 
+import SettingHTTPServerSection
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -208,6 +209,8 @@ fun useSettingsPage(): ScaffoldExt {
                 .verticalScroll(scrollState)
                 .padding(padding)
         ) {
+
+            SettingHTTPServerSection()
 
             Text(
                 text = "常规",
